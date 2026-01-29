@@ -13,13 +13,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  LineChart,
-  Line,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar,
 } from "recharts";
 import Papa from "papaparse";
 
@@ -281,9 +274,7 @@ export default function Dashboard() {
 
     const groups: { [key: string]: SurveyData[] } = {};
     
-    // 기존직원만 년차별로 분류
     data.forEach((d) => {
-      // 신입사원은 제외
       if (col소속 && d[col소속]?.includes("신입")) return;
       
       const year = d[col년차];
@@ -623,7 +614,7 @@ export default function Dashboard() {
                         <Cell key={`cell-${index}`} fill={COLORS.years[index % COLORS.years.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value: number, name: string, props: { payload: { fullName: string } }) => [value + "명", props.payload.fullName]} />
+                    <Tooltip />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -637,14 +628,11 @@ export default function Dashboard() {
                     <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 12 }} />
                     <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} tick={{ fill: "#64748b", fontSize: 12 }} />
                     <Tooltip 
-                      formatter={(value: number, name: string) => {
-                        if (name === "유료결제율") return [`${value}%`, "유료 결제율"];
-                        return [value, name];
-                      }}
+                      formatter={(value: number) => [`${value}%`, "유료 결제율"]}
                       contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
                     />
                     <Bar dataKey="유료결제율" fill="#F59E0B" radius={[4, 4, 0, 0]}>
-                      {yearlyPaidRate.map((entry, index) => (
+                      {yearlyPaidRate.map((_, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS.years[index % COLORS.years.length]} />
                       ))}
                     </Bar>
@@ -811,10 +799,7 @@ export default function Dashboard() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
                     <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={85} />
-                    <Tooltip 
-                      formatter={(value: number) => [`${value}%`, "응답률"]}
-                      labelFormatter={(label) => usageData.find(d => d.name === label)?.fullName || label}
-                    />
+                    <Tooltip formatter={(value: number) => [`${value}%`, "응답률"]} />
                     <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                       {usageData.map((_, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS.gradient[index % COLORS.gradient.length]} />
@@ -844,7 +829,7 @@ export default function Dashboard() {
                         <Cell key={`cell-${index}`} fill={COLORS.pie[index % COLORS.pie.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value: number, name: string, props: { payload: { fullName: string } }) => [value + "명", props.payload.fullName]} />
+                    <Tooltip />
                   </PieChart>
                 </ResponsiveContainer>
               </section>
