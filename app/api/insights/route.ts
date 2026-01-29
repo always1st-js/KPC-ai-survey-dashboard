@@ -1,6 +1,18 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
+interface YearlyPaidItem {
+  name: string;
+  유료결제율: number;
+  인원: number;
+}
+
+interface ChartDataItem {
+  name: string;
+  신입: number;
+  기존: number;
+}
+
 export async function POST(request: Request) {
   try {
     const { stats, chartData, paidRatio, yearlyPaid } = await request.json();
@@ -18,7 +30,7 @@ export async function POST(request: Request) {
 
     // 년차별 데이터 포맷팅
     const yearlyPaidText = yearlyPaid && yearlyPaid.length > 0
-      ? yearlyPaid.map((d: { name: string; 유료결제율: number; 인원: number }) => 
+      ? yearlyPaid.map((d: YearlyPaidItem) => 
           `${d.name}: ${d.유료결제율}% (${d.인원}명)`
         ).join(', ')
       : '데이터 없음';
@@ -40,7 +52,7 @@ export async function POST(request: Request) {
     ${yearlyPaidText}
     
     [대화형 AI 사용률 - 그룹 내 비율]
-    ${chartData.map((d: { name: string; 신입: number; 기존: number }) => 
+    ${chartData.map((d: ChartDataItem) => 
       `- ${d.name}: 신입 ${d.신입}% / 기존 ${d.기존}%`
     ).join('\n')}
     
