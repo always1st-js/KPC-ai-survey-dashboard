@@ -329,7 +329,7 @@ export default function Dashboard() {
   const getYearlyPaidRate = useCallback(() => {
     const yearGroups = getYearGroups();
     const columns = Object.keys(data[0] || {});
-    const col결제 = findColumn(columns, ["월 평균", "총액", "결제 금액은"]);
+    const col결제 = findColumn(columns, ["월 평균", "결제 금액"]);
     
     if (!col결제 || Object.keys(yearGroups).length === 0) return [];
 
@@ -418,7 +418,7 @@ export default function Dashboard() {
     if (data.length === 0) return [];
 
     const columns = Object.keys(data[0] || {});
-    const col결제 = findColumn(columns, ["월 평균", "총액", "결제 금액은"]);
+    const col결제 = findColumn(columns, ["월 평균", "결제 금액"]);
 
     if (!col결제) return [];
 
@@ -450,7 +450,7 @@ export default function Dashboard() {
     if (data.length === 0) return { rookie: 0, veteran: 0 };
 
     const columns = Object.keys(data[0] || {});
-    const col결제 = findColumn(columns, ["월 평균", "총액", "결제 금액은"]);
+    const col결제 = findColumn(columns, ["월 평균", "결제 금액"]);
     const { rookie, veteran } = getGroupData();
 
     if (!col결제) return { rookie: 0, veteran: 0 };
