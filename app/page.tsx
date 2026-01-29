@@ -61,15 +61,15 @@ const YEAR_ORDER = [
 
 const YEAR_SHORT = ["~1년", "1~3년", "3~5년", "5~10년", "10년+"];
 
-// 도구 목록
+// 도구 목록 (실제 스프레드시트 데이터와 일치)
 const TOOLS = {
   대화형: ["ChatGPT", "Claude", "Gemini", "뤼튼", "Copilot", "Perplexity"],
   코딩: ["GitHub Copilot", "Cursor", "Google Colab", "Replit", "Claude Code", "Windsurf"],
   이미지: ["Midjourney", "DALL-E", "Stable Diffusion", "Canva AI", "Adobe Firefly"],
   영상: ["Runway", "Suno", "ElevenLabs", "Vrew", "HeyGen"],
-  문서: ["Notion AI", "Gamma", "한글 AI", "MS Copilot", "Google Workspace"],
-  자동화: ["Google Opal", "n8n", "Make", "Zapier", "Apps Script", "Power Automate"],
-  협업: ["Notion", "Slack", "Teams", "Google Workspace", "Figma", "Miro"],
+  문서: ["Notion AI", "Gamma", "한글 AI", "MS Copilot", "Google Workspace AI"],
+  자동화: ["Google Opal", "n8n", "Make", "Zapier", "Google Apps Script", "Power Automate"],
+  협업: ["Notion", "Slack", "MS Teams", "Google Workspace", "Figma", "Miro", "Jira", "카카오워크"],
 };
 
 // 섹션 컴포넌트
@@ -142,12 +142,12 @@ export default function Dashboard() {
   const [insights, setInsights] = useState<string>("");
   const [insightsLoading, setInsightsLoading] = useState(false);
 
-  // 컬럼 찾기 함수
+  // 컬럼 찾기 함수 (모든 키워드가 포함된 컬럼 찾기)
   const findColumn = useCallback((columns: string[], keywords: string[]) => {
     for (const col of columns) {
-      for (const keyword of keywords) {
-        if (col.includes(keyword)) return col;
-      }
+      // 모든 키워드가 컬럼명에 포함되어야 함
+      const allMatch = keywords.every(keyword => col.includes(keyword));
+      if (allMatch) return col;
     }
     return null;
   }, []);
@@ -482,12 +482,12 @@ export default function Dashboard() {
   const stats = getStats();
   const paidRatio = getPaidRatio();
   const 대화형Data = getChartData(TOOLS.대화형, ["대화형", "사용한"]);
-  const 코딩Data = getChartData(TOOLS.코딩, ["코딩", "개발", "사용한"]);
-  const 이미지Data = getChartData(TOOLS.이미지, ["이미지", "디자인", "사용한"]);
-  const 영상Data = getChartData(TOOLS.영상, ["영상", "음성", "사용한"]);
-  const 문서Data = getChartData(TOOLS.문서, ["문서", "생산성", "사용한"]);
-  const 자동화Data = getChartData(TOOLS.자동화, ["자동화", "노코드", "사용한"]);
-  const 협업Data = getChartData(TOOLS.협업, ["협업", "사용한"]);
+  const 코딩Data = getChartData(TOOLS.코딩, ["코딩", "사용한"]);
+  const 이미지Data = getChartData(TOOLS.이미지, ["이미지", "사용한"]);
+  const 영상Data = getChartData(TOOLS.영상, ["영상", "사용한"]);
+  const 문서Data = getChartData(TOOLS.문서, ["문서", "사용한"]);
+  const 자동화Data = getChartData(TOOLS.자동화, ["자동화", "사용한"]);
+  const 협업Data = getChartData(TOOLS.협업, ["협업 도구", "사용한"]);
   const usageData = getUsageData();
   const paymentData = getPaymentData();
   
