@@ -422,6 +422,15 @@ export default function Dashboard() {
 
     if (!col결제) return [];
 
+    // 긴 라벨을 짧게 변환
+    const shortLabels: { [key: string]: string } = {
+      "0원 (유료 결제 없음)": "0원",
+      "0원 초과 ~ 5만원 미만": "~5만원",
+      "5만원 이상 ~ 10만원 미만": "5~10만원",
+      "10만원 이상 ~ 20만원 미만": "10~20만원",
+      "20만원 이상": "20만원+",
+    };
+
     const counter: { [key: string]: number } = {};
     data.forEach((d) => {
       const val = d[col결제];
@@ -429,7 +438,7 @@ export default function Dashboard() {
     });
 
     return Object.entries(counter).map(([name, value]) => ({
-      name: name.length > 15 ? name.slice(0, 15) + "..." : name,
+      name: shortLabels[name] || (name.length > 10 ? name.slice(0, 10) + "..." : name),
       value,
       fullName: name,
       percent: Math.round((value / data.length) * 100),
