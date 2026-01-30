@@ -50,16 +50,19 @@ const COLORS = {
   years: ["#4285F4", "#34A853", "#FBBC04", "#EA4335", "#7C3AED"],
 };
 
-// 년차 순서 정의 (새로운 기준)
-const YEAR_ORDER = [
-  "1년 미만",
-  "1년 이상 ~ 5년 미만", 
-  "5년 이상 ~ 10년 미만",
-  "10년 이상 ~ 15년 미만",
-  "15년 이상"
-];
-
-const YEAR_SHORT = ["~1년", "1~5년", "5~10년", "10~15년", "15년+"];
+// 년차 라벨 매핑 (긴 텍스트 → 짧은 텍스트)
+const YEAR_LABEL_MAP: { [key: string]: string } = {
+  // 기존 기준
+  "1년 미만": "~1년",
+  "1년 이상 ~ 3년 미만": "1~3년",
+  "3년 이상 ~ 5년 미만": "3~5년",
+  "5년 이상 ~ 10년 미만": "5~10년",
+  "10년 이상": "10년+",
+  // 새 기준
+  "1년 이상 ~ 5년 미만": "1~5년", 
+  "10년 이상 ~ 15년 미만": "10~15년",
+  "15년 이상": "15년+",
+};
 
 // 도구 목록 (실제 스프레드시트 데이터와 일치)
 const TOOLS = {
@@ -267,7 +270,7 @@ export default function Dashboard() {
     if (data.length === 0) return {};
 
     const columns = Object.keys(data[0] || {});
-    const col년차 = findColumn(columns, ["근속", "연수", "년차"]);
+    const col년차 = findColumn(columns, ["근속 연수"]);
     const col소속 = findColumn(columns, ["소속"]);
 
     if (!col년차) return {};
@@ -295,13 +298,17 @@ export default function Dashboard() {
     
     if (!colTarget || Object.keys(yearGroups).length === 0) return [];
 
+    const years = Object.keys(yearGroups);
+    
     return tools.map((tool) => {
       const result: YearUsage = { name: tool };
       
-      YEAR_ORDER.forEach((year, idx) => {
+      years.forEach((year) => {
         const group = yearGroups[year] || [];
+        const shortLabel = YEAR_LABEL_MAP[year] || year;
+        
         if (group.length === 0) {
-          result[YEAR_SHORT[idx]] = 0;
+          result[shortLabel] = 0;
           return;
         }
         
@@ -318,7 +325,7 @@ export default function Dashboard() {
           });
         }
         
-        result[YEAR_SHORT[idx]] = Math.round((count / group.length) * 100);
+        result[shortLabel] = Math.round((count / group.length) * 100);
       });
       
       return result;
@@ -333,14 +340,18 @@ export default function Dashboard() {
     
     if (!col결제 || Object.keys(yearGroups).length === 0) return [];
 
-    return YEAR_ORDER.map((year, idx) => {
+    const years = Object.keys(yearGroups);
+    
+    return years.map((year) => {
       const group = yearGroups[year] || [];
-      if (group.length === 0) return { name: YEAR_SHORT[idx], 유료결제율: 0, 인원: 0 };
+      const shortLabel = YEAR_LABEL_MAP[year] || year;
+      
+      if (group.length === 0) return { name: shortLabel, 유료결제율: 0, 인원: 0 };
       
       const paidCount = group.filter((d) => d[col결제] && !d[col결제].includes("0원")).length;
       
       return {
-        name: YEAR_SHORT[idx],
+        name: shortLabel,
         유료결제율: Math.round((paidCount / group.length) * 100),
         인원: group.length,
       };
@@ -350,9 +361,10 @@ export default function Dashboard() {
   // 년차별 인원 분포
   const getYearDistribution = useCallback(() => {
     const yearGroups = getYearGroups();
+    const years = Object.keys(yearGroups);
     
-    return YEAR_ORDER.map((year, idx) => ({
-      name: YEAR_SHORT[idx],
+    return years.map((year) => ({
+      name: YEAR_LABEL_MAP[year] || year,
       fullName: year,
       value: (yearGroups[year] || []).length,
     })).filter(d => d.value > 0);
@@ -664,8 +676,8 @@ export default function Dashboard() {
                       contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
                     />
                     <Legend />
-                    {YEAR_SHORT.map((year, idx) => (
-                      <Bar key={year} dataKey={year} fill={COLORS.years[idx]} radius={[4, 4, 0, 0]} />
+                    {Object.keys(yearly대화형[0] || {}).filter(k => k !== "name").map((year, idx) => (
+                      <Bar key={year} dataKey={year} fill={COLORS.years[idx % COLORS.years.length]} radius={[4, 4, 0, 0]} />
                     ))}
                   </BarChart>
                 </ResponsiveContainer>
