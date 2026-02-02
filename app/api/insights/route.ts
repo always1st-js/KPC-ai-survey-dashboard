@@ -22,8 +22,8 @@ export async function POST(request: Request) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    // 모델명: gemini-1.5-pro (안정적 + 고품질)
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    // 모델명: gemini-pro (v1beta에서 가장 안정적)
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
 
     const rookiePercent = stats.total > 0 ? Math.round((stats.rookie / stats.total) * 100) : 0;
     const veteranPercent = stats.total > 0 ? Math.round((stats.veteran / stats.total) * 100) : 0;
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
     (AI 활용 팁 1가지)
     
     톤: 친근하고 활기차게, 이모지 적절히 사용
-    분량: 총 300단어 내외
+    분량: 총 250단어 내외
     `;
 
     const result = await model.generateContent(prompt);
