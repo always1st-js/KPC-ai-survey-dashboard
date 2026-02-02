@@ -845,7 +845,7 @@ export default function Dashboard() {
         <footer className="text-center text-slate-400 text-sm py-8">
           <p>© 2026 KPC 한국생산성본부 AI전환센터</p>
           <p className="mt-1">신입사원 AI 교육 - 실시간 설문 분석 대시보드</p>
-          <p className="mt-2 text-slate-300">Designed by Junsung Sohn | KPC AI전환센터</p>
+          <p className="mt-2 text-slate-300">Designed by <span className="font-semibold text-slate-400">Junsung Sohn</span> | KPC AI전환센터</p>
         </footer>
       </div>
     </main>
