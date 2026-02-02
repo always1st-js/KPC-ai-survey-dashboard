@@ -796,6 +796,63 @@ export default function Dashboard() {
           </div>
         </section>
 
+        {/* ========== 파이차트 2개: 년차별 분포 + 전공 분포 ========== */}
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          {tenureDistribution.length > 0 && (
+            <section className="bg-white rounded-2xl shadow-md p-6">
+              <h3 className="text-lg font-bold text-slate-800 mb-4">👥 기존직원 년차별 분포</h3>
+              <ResponsiveContainer width="100%" height={280}>
+                <PieChart>
+                  <Pie
+                    data={tenureDistribution}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={true}
+                    label={({ name, value }) => `${name}: ${value}명`}
+                    outerRadius={90}
+                    fill="#8884d8"
+                    dataKey="value"
+                    animationBegin={0}
+                    animationDuration={1200}
+                  >
+                    {tenureDistribution.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS.years[index % COLORS.years.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </section>
+          )}
+
+          {majorData.length > 0 && (
+            <section className="bg-white rounded-2xl shadow-md p-6">
+              <h3 className="text-lg font-bold text-slate-800 mb-4">🎓 응답자 전공 분포</h3>
+              <ResponsiveContainer width="100%" height={280}>
+                <PieChart>
+                  <Pie
+                    data={majorData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={true}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={90}
+                    fill="#8884d8"
+                    dataKey="value"
+                    animationBegin={200}
+                    animationDuration={1200}
+                  >
+                    {majorData.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS.pie[index % COLORS.pie.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </section>
+          )}
+        </div>
+
         {/* ========== 섹션 1: 신입 vs 기존직원 AI 활용 비교 ========== */}
         <SectionBanner
           emoji="👥"
@@ -860,63 +917,6 @@ export default function Dashboard() {
           subtitle="기존직원을 근속연수별로 분석합니다"
           gradient="from-orange-400 to-orange-600"
         />
-
-        {/* 파이차트 2개: 년차별 분포 + 전공 분포 */}
-        <div className="grid md:grid-cols-2 gap-6 mb-6">
-          {tenureDistribution.length > 0 && (
-            <section className="bg-white rounded-2xl shadow-md p-6">
-              <h3 className="text-lg font-bold text-slate-800 mb-4">👥 기존직원 년차별 분포</h3>
-              <ResponsiveContainer width="100%" height={280}>
-                <PieChart>
-                  <Pie
-                    data={tenureDistribution}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={true}
-                    label={({ name, value }) => `${name}: ${value}명`}
-                    outerRadius={90}
-                    fill="#8884d8"
-                    dataKey="value"
-                    animationBegin={0}
-                    animationDuration={1200}
-                  >
-                    {tenureDistribution.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS.years[index % COLORS.years.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </section>
-          )}
-
-          {majorData.length > 0 && (
-            <section className="bg-white rounded-2xl shadow-md p-6">
-              <h3 className="text-lg font-bold text-slate-800 mb-4">🎓 응답자 전공 분포</h3>
-              <ResponsiveContainer width="100%" height={280}>
-                <PieChart>
-                  <Pie
-                    data={majorData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={true}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={90}
-                    fill="#8884d8"
-                    dataKey="value"
-                    animationBegin={200}
-                    animationDuration={1200}
-                  >
-                    {majorData.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS.pie[index % COLORS.pie.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </section>
-          )}
-        </div>
 
         {/* 년차별 응답수 태그 */}
         <div className="mb-6 flex flex-wrap gap-2">
