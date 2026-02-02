@@ -244,15 +244,16 @@ export default function Dashboard() {
     [data, findColumn, calcGroupPercentage]
   );
 
-  // 년차별 데이터
+  // 년차별 데이터 (신입 포함!)
   const getTenureData = useCallback((): TenureData[] => {
     if (data.length === 0) return [];
 
     const columns = Object.keys(data[0] || {});
+    const col소속 = findColumn(columns, ["소속"]);
     const col년차 = findColumn(columns, ["Q2", "근속"]);
     const col결제 = findColumn(columns, ["Q16", "금액"]);
 
-    if (!col년차 || !col결제) return [];
+    if (!col결제) return [];
 
     const parsePayment = (text: string): number => {
       if (!text || text.includes("0원 (유료 결제 없음)")) return 0;
@@ -265,29 +266,50 @@ export default function Dashboard() {
 
     const tenureGroups: { [key: string]: { payments: number[], paidCount: number } } = {};
     
-    data.forEach(d => {
-      const tenure = d[col년차];
-      if (!tenure) return;
-      
-      if (!tenureGroups[tenure]) {
-        tenureGroups[tenure] = { payments: [], paidCount: 0 };
+    // 신입사원 그룹 먼저 처리
+    if (col소속) {
+      const rookies = data.filter(d => d[col소속]?.includes("신입"));
+      if (rookies.length > 0) {
+        tenureGroups["신입"] = { payments: [], paidCount: 0 };
+        rookies.forEach(d => {
+          const payment = parsePayment(d[col결제] || "");
+          tenureGroups["신입"].payments.push(payment);
+          if (payment > 0) tenureGroups["신입"].paidCount++;
+        });
       }
-      
-      const payment = parsePayment(d[col결제] || "");
-      tenureGroups[tenure].payments.push(payment);
-      if (payment > 0) tenureGroups[tenure].paidCount++;
-    });
+    }
+    
+    // 기존 직원 년차별 그룹
+    if (col년차) {
+      data.forEach(d => {
+        const tenure = d[col년차];
+        if (!tenure) return;
+        
+        if (!tenureGroups[tenure]) {
+          tenureGroups[tenure] = { payments: [], paidCount: 0 };
+        }
+        
+        const payment = parsePayment(d[col결제] || "");
+        tenureGroups[tenure].payments.push(payment);
+        if (payment > 0) tenureGroups[tenure].paidCount++;
+      });
+    }
 
-    return TENURE_ORDER
+    // 신입 + 기존 년차 순서
+    const fullOrder = ["신입", ...TENURE_ORDER];
+    const shortLabels = ["신입", ...TENURE_SHORT];
+
+    return fullOrder
       .filter(t => tenureGroups[t])
-      .map((tenure, idx) => {
+      .map((tenure) => {
         const group = tenureGroups[tenure];
         const count = group.payments.length;
         const avgPayment = count > 0 ? group.payments.reduce((a, b) => a + b, 0) / count : 0;
         const paidRate = count > 0 ? (group.paidCount / count) * 100 : 0;
+        const idx = fullOrder.indexOf(tenure);
         
         return {
-          tenure: TENURE_SHORT[idx],
+          tenure: shortLabels[idx] || tenure,
           fullTenure: tenure,
           count,
           paidRate: Math.round(paidRate),
@@ -635,18 +657,14 @@ export default function Dashboard() {
         <section className="rounded-2xl p-6 bg-white/60 backdrop-blur-xl border border-white/60 shadow-xl">
           <h2 className="text-xl font-bold text-slate-800 mb-6">📅 년차별 AI 활용 분석 <span className="text-sm font-normal text-slate-400">년차가 높을수록?</span></h2>
           
-          {/* 년차별 응답수 + 신입사원 */}
+          {/* 년차별 응답수 */}
           <div className="mb-6 flex flex-wrap gap-2">
-            {stats.rookie > 0 && (
-              <div className="px-3 py-2 bg-indigo-100 rounded-lg text-sm border-2 border-indigo-300">
-                <span className="font-medium text-indigo-700">🆕 신입</span>
-                <span className="ml-2 text-indigo-600 font-bold">{stats.rookie}명</span>
-              </div>
-            )}
             {tenureData.map((d, idx) => (
-              <div key={idx} className="px-3 py-2 bg-slate-100 rounded-lg text-sm">
-                <span className="font-medium text-slate-700">{d.tenure}</span>
-                <span className="ml-2 text-slate-500">{d.count}명</span>
+              <div key={idx} className={`px-3 py-2 rounded-lg text-sm ${d.tenure === "신입" ? "bg-indigo-100 border-2 border-indigo-300" : "bg-slate-100"}`}>
+                <span className={`font-medium ${d.tenure === "신입" ? "text-indigo-700" : "text-slate-700"}`}>
+                  {d.tenure === "신입" ? "🆕 신입" : d.tenure}
+                </span>
+                <span className={`ml-2 ${d.tenure === "신입" ? "text-indigo-600 font-bold" : "text-slate-500"}`}>{d.count}명</span>
               </div>
             ))}
           </div>
