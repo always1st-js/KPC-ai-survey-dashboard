@@ -30,127 +30,67 @@ interface ToolUsage {
   기존: number;
 }
 
-interface YearUsage {
-  name: string;
-  [key: string]: string | number;
-}
-
 interface GroupStats {
   total: number;
   rookie: number;
   veteran: number;
+  paidRate신입: number;
+  paidRate기존: number;
+}
+
+interface TenureData {
+  tenure: string;
+  count: number;
+  paidRate: number;
+  avgPayment: number;
+}
+
+interface ConversionData {
+  name: string;
+  users: number;
+  paid: number;
+  rate: number;
+}
+
+interface PainPointData {
+  category: string;
+  count: number;
+  items: string[];
 }
 
 // 색상 정의
 const COLORS = {
-  rookie: "#4285F4",
-  veteran: "#34A853",
-  pie: ["#4285F4", "#34A853", "#FBBC04", "#EA4335", "#9AA0A6", "#7C3AED", "#F97316"],
-  gradient: ["#3B82F6", "#8B5CF6", "#EC4899", "#F97316", "#10B981"],
-  years: ["#4285F4", "#34A853", "#FBBC04", "#EA4335", "#7C3AED"],
+  rookie: "#6366f1",
+  veteran: "#10b981",
+  pie: ["#6366f1", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#3b82f6"],
 };
 
-// 년차 라벨 매핑 (긴 텍스트 → 짧은 텍스트)
-const YEAR_LABEL_MAP: { [key: string]: string } = {
-  // 기존 기준
-  "1년 미만": "~1년",
-  "1년 이상 ~ 3년 미만": "1~3년",
-  "3년 이상 ~ 5년 미만": "3~5년",
-  "5년 이상 ~ 10년 미만": "5~10년",
-  "10년 이상": "10년+",
-  // 새 기준
-  "1년 이상 ~ 5년 미만": "1~5년", 
-  "10년 이상 ~ 15년 미만": "10~15년",
-  "15년 이상": "15년+",
-};
+// 도구 목록
+const TOOLS_대화형 = ["ChatGPT", "Claude", "Gemini", "뤼튼", "Copilot", "Perplexity"];
 
-// 도구 목록 (실제 스프레드시트 데이터와 일치)
-const TOOLS = {
-  대화형: ["ChatGPT", "Claude", "Gemini", "뤼튼", "Copilot", "Perplexity"],
-  코딩: ["GitHub Copilot", "Cursor", "Google Colab", "Replit", "Claude Code", "Windsurf"],
-  이미지: ["Midjourney", "DALL-E", "Stable Diffusion", "Canva AI", "Adobe Firefly"],
-  영상: ["Runway", "Suno", "ElevenLabs", "Vrew", "HeyGen"],
-  문서: ["Notion AI", "Gamma", "한글 AI", "MS Copilot", "Google Workspace AI"],
-  자동화: ["Google Opal", "n8n", "Make", "Zapier", "Google Apps Script", "Power Automate"],
-  협업: ["Notion", "Slack", "MS Teams", "Google Workspace", "Figma", "Miro", "Jira", "카카오워크"],
-};
-
-// 섹션 컴포넌트
-const SectionTitle = ({ emoji, title, subtitle }: { emoji: string; title: string; subtitle?: string }) => (
-  <div className="flex items-center justify-between mb-4">
-    <h2 className="text-xl font-bold text-slate-800">
-      {emoji} {title}
-    </h2>
-    {subtitle && <p className="text-sm text-slate-500">{subtitle}</p>}
-  </div>
-);
-
-// 비교 차트 컴포넌트
-const ComparisonChart = ({ 
-  data, 
-  title, 
-  emoji,
-  rookieCount, 
-  veteranCount 
-}: { 
-  data: ToolUsage[]; 
-  title: string;
-  emoji: string;
-  rookieCount: number; 
-  veteranCount: number;
-}) => (
-  <section className="chart-container mb-6 animate-fade-in">
-    <SectionTitle emoji={emoji} title={title} subtitle="최근 3개월 기준 (그룹 내 %)" />
-    <ResponsiveContainer width="100%" height={280}>
-      <BarChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-        <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 11 }} interval={0} />
-        <YAxis
-          tick={{ fill: "#64748b", fontSize: 12 }}
-          domain={[0, 100]}
-          tickFormatter={(v) => `${v}%`}
-        />
-        <Tooltip
-          formatter={(value: number) => [`${value}%`, ""]}
-          contentStyle={{
-            backgroundColor: "white",
-            borderRadius: "12px",
-            border: "none",
-            boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-          }}
-        />
-        <Legend />
-        <Bar
-          dataKey="신입"
-          name={`신입 (n=${rookieCount})`}
-          fill={COLORS.rookie}
-          radius={[4, 4, 0, 0]}
-        />
-        <Bar
-          dataKey="기존"
-          name={`기존 (n=${veteranCount})`}
-          fill={COLORS.veteran}
-          radius={[4, 4, 0, 0]}
-        />
-      </BarChart>
-    </ResponsiveContainer>
-  </section>
-);
+// 년차 순서 정의
+const TENURE_ORDER = ["1년 미만", "1년 이상 ~ 5년 미만", "5년 이상 ~ 10년 미만", "10년 이상 ~ 15년 미만", "15년 이상"];
+const TENURE_SHORT = ["~1년", "1-5년", "5-10년", "10-15년", "15년+"];
 
 export default function Dashboard() {
+  const [mounted, setMounted] = useState(false);
   const [data, setData] = useState<SurveyData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<string>("");
-  const [insights, setInsights] = useState<string>("");
-  const [insightsLoading, setInsightsLoading] = useState(false);
+  const [showAllPainPoints, setShowAllPainPoints] = useState(false);
 
-  // 컬럼 찾기 함수 (모든 키워드가 포함된 컬럼 찾기)
+  // Hydration 에러 방지
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // 컬럼 찾기 함수
   const findColumn = useCallback((columns: string[], keywords: string[]) => {
     for (const col of columns) {
-      // 모든 키워드가 컬럼명에 포함되어야 함
-      const allMatch = keywords.every(keyword => col.includes(keyword));
-      if (allMatch) return col;
+      for (const keyword of keywords) {
+        if (col.includes(keyword)) return col;
+      }
     }
     return null;
   }, []);
@@ -208,7 +148,7 @@ export default function Dashboard() {
       const response = await fetch(url);
       
       if (!response.ok) {
-        throw new Error("스프레드시트를 불러올 수 없습니다. 공개 설정을 확인해주세요.");
+        throw new Error("스프레드시트를 불러올 수 없습니다.");
       }
 
       const csvText = await response.text();
@@ -237,138 +177,34 @@ export default function Dashboard() {
 
   // 통계 계산
   const getStats = useCallback((): GroupStats => {
-    if (data.length === 0) return { total: 0, rookie: 0, veteran: 0 };
+    if (data.length === 0) return { total: 0, rookie: 0, veteran: 0, paidRate신입: 0, paidRate기존: 0 };
 
     const columns = Object.keys(data[0] || {});
     const col소속 = findColumn(columns, ["소속"]);
+    const col결제 = findColumn(columns, ["결제", "금액"]);
 
-    if (!col소속) return { total: data.length, rookie: 0, veteran: 0 };
+    if (!col소속) return { total: data.length, rookie: 0, veteran: 0, paidRate신입: 0, paidRate기존: 0 };
 
-    const rookie = data.filter((d) => d[col소속]?.includes("신입")).length;
-    const veteran = data.length - rookie;
+    const rookieData = data.filter((d) => d[col소속]?.includes("신입"));
+    const veteranData = data.filter((d) => !d[col소속]?.includes("신입"));
 
-    return { total: data.length, rookie, veteran };
-  }, [data, findColumn]);
-
-  // 그룹 데이터 분리
-  const getGroupData = useCallback(() => {
-    if (data.length === 0) return { rookie: [], veteran: [] };
-
-    const columns = Object.keys(data[0] || {});
-    const col소속 = findColumn(columns, ["소속"]);
-
-    if (!col소속) return { rookie: [], veteran: [] };
+    const calcPaidRate = (group: SurveyData[]) => {
+      if (group.length === 0 || !col결제) return 0;
+      const paid = group.filter(d => {
+        const val = d[col결제] || "";
+        return !val.includes("0원 (유료") && val !== "";
+      }).length;
+      return Math.round((paid / group.length) * 100);
+    };
 
     return {
-      rookie: data.filter((d) => d[col소속]?.includes("신입")),
-      veteran: data.filter((d) => !d[col소속]?.includes("신입")),
+      total: data.length,
+      rookie: rookieData.length,
+      veteran: veteranData.length,
+      paidRate신입: calcPaidRate(rookieData),
+      paidRate기존: calcPaidRate(veteranData),
     };
   }, [data, findColumn]);
-
-  // 년차별 데이터 분리
-  const getYearGroups = useCallback(() => {
-    if (data.length === 0) return {};
-
-    const columns = Object.keys(data[0] || {});
-    const col년차 = findColumn(columns, ["근속 연수"]);
-    const col소속 = findColumn(columns, ["소속"]);
-
-    if (!col년차) return {};
-
-    const groups: { [key: string]: SurveyData[] } = {};
-    
-    data.forEach((d) => {
-      if (col소속 && d[col소속]?.includes("신입")) return;
-      
-      const year = d[col년차];
-      if (year) {
-        if (!groups[year]) groups[year] = [];
-        groups[year].push(d);
-      }
-    });
-
-    return groups;
-  }, [data, findColumn]);
-
-  // 년차별 도구 사용률 계산
-  const getYearlyToolUsage = useCallback((tools: string[], columnKeywords: string[]): YearUsage[] => {
-    const yearGroups = getYearGroups();
-    const columns = Object.keys(data[0] || {});
-    const colTarget = findColumn(columns, columnKeywords);
-    
-    if (!colTarget || Object.keys(yearGroups).length === 0) return [];
-
-    const years = Object.keys(yearGroups);
-    
-    return tools.map((tool) => {
-      const result: YearUsage = { name: tool };
-      
-      years.forEach((year) => {
-        const group = yearGroups[year] || [];
-        const shortLabel = YEAR_LABEL_MAP[year] || year;
-        
-        if (group.length === 0) {
-          result[shortLabel] = 0;
-          return;
-        }
-        
-        const responses = group.map((d) => d[colTarget] || "");
-        const counter = parseCheckbox(responses);
-        
-        let count = counter[tool] || 0;
-        if (count === 0) {
-          Object.keys(counter).forEach((key) => {
-            if (key.toLowerCase().includes(tool.toLowerCase()) || 
-                tool.toLowerCase().includes(key.toLowerCase())) {
-              count = counter[key];
-            }
-          });
-        }
-        
-        result[shortLabel] = Math.round((count / group.length) * 100);
-      });
-      
-      return result;
-    });
-  }, [data, findColumn, getYearGroups, parseCheckbox]);
-
-  // 년차별 유료 결제율
-  const getYearlyPaidRate = useCallback(() => {
-    const yearGroups = getYearGroups();
-    const columns = Object.keys(data[0] || {});
-    const col결제 = findColumn(columns, ["월 평균", "결제 금액"]);
-    
-    if (!col결제 || Object.keys(yearGroups).length === 0) return [];
-
-    const years = Object.keys(yearGroups);
-    
-    return years.map((year) => {
-      const group = yearGroups[year] || [];
-      const shortLabel = YEAR_LABEL_MAP[year] || year;
-      
-      if (group.length === 0) return { name: shortLabel, 유료결제율: 0, 인원: 0 };
-      
-      const paidCount = group.filter((d) => d[col결제] && !d[col결제].includes("0원")).length;
-      
-      return {
-        name: shortLabel,
-        유료결제율: Math.round((paidCount / group.length) * 100),
-        인원: group.length,
-      };
-    }).filter(d => d.인원 > 0);
-  }, [data, findColumn, getYearGroups]);
-
-  // 년차별 인원 분포
-  const getYearDistribution = useCallback(() => {
-    const yearGroups = getYearGroups();
-    const years = Object.keys(yearGroups);
-    
-    return years.map((year) => ({
-      name: YEAR_LABEL_MAP[year] || year,
-      fullName: year,
-      value: (yearGroups[year] || []).length,
-    })).filter(d => d.value > 0);
-  }, [getYearGroups]);
 
   // 차트 데이터 생성
   const getChartData = useCallback(
@@ -376,13 +212,16 @@ export default function Dashboard() {
       if (data.length === 0) return [];
 
       const columns = Object.keys(data[0] || {});
+      const col소속 = findColumn(columns, ["소속"]);
       const colTarget = findColumn(columns, columnKeywords);
 
-      if (!colTarget) return [];
+      if (!col소속 || !colTarget) return [];
 
-      const { rookie, veteran } = getGroupData();
-      const rookieRates = calcGroupPercentage(rookie, colTarget, tools);
-      const veteranRates = calcGroupPercentage(veteran, colTarget, tools);
+      const rookieData = data.filter((d) => d[col소속]?.includes("신입"));
+      const veteranData = data.filter((d) => !d[col소속]?.includes("신입"));
+
+      const rookieRates = calcGroupPercentage(rookieData, colTarget, tools);
+      const veteranRates = calcGroupPercentage(veteranData, colTarget, tools);
 
       return tools.map((tool, i) => ({
         name: tool,
@@ -390,39 +229,205 @@ export default function Dashboard() {
         기존: veteranRates[i],
       }));
     },
-    [data, findColumn, getGroupData, calcGroupPercentage]
+    [data, findColumn, calcGroupPercentage]
   );
 
-  // AI 활용 상황 데이터
-  const getUsageData = useCallback(() => {
+  // 년차별 데이터 (순서 정렬됨!)
+  const getTenureData = useCallback((): TenureData[] => {
     if (data.length === 0) return [];
 
     const columns = Object.keys(data[0] || {});
-    const col활용 = findColumn(columns, ["활용", "상황", "어떤"]);
+    const col년차 = findColumn(columns, ["근속", "연수"]);
+    const col결제 = findColumn(columns, ["결제", "금액"]);
 
-    if (!col활용) return [];
+    if (!col년차 || !col결제) return [];
 
-    const counter: { [key: string]: number } = {};
-    data.forEach((d) => {
-      const val = d[col활용];
-      if (val) {
-        val.split(", ").forEach((item) => {
-          const trimmed = item.trim();
-          if (trimmed && !trimmed.includes("사용 안") && !trimmed.includes("기타")) {
-            counter[trimmed] = (counter[trimmed] || 0) + 1;
+    const parsePayment = (text: string): number => {
+      if (text.includes("0원 (유료 결제 없음)")) return 0;
+      if (text.includes("0원 초과 ~ 5만원 미만")) return 2.5;
+      if (text.includes("5만원 이상 ~ 10만원 미만")) return 7.5;
+      if (text.includes("10만원 이상 ~ 20만원 미만")) return 15;
+      if (text.includes("20만원 이상")) return 25;
+      return 0;
+    };
+
+    const tenureGroups: { [key: string]: { payments: number[], paidCount: number } } = {};
+    
+    data.forEach(d => {
+      const tenure = d[col년차];
+      if (!tenure) return;
+      
+      if (!tenureGroups[tenure]) {
+        tenureGroups[tenure] = { payments: [], paidCount: 0 };
+      }
+      
+      const payment = parsePayment(d[col결제] || "");
+      tenureGroups[tenure].payments.push(payment);
+      if (payment > 0) tenureGroups[tenure].paidCount++;
+    });
+
+    return TENURE_ORDER
+      .filter(t => tenureGroups[t])
+      .map((tenure, idx) => {
+        const group = tenureGroups[tenure];
+        const count = group.payments.length;
+        const avgPayment = count > 0 ? group.payments.reduce((a, b) => a + b, 0) / count : 0;
+        const paidRate = count > 0 ? (group.paidCount / count) * 100 : 0;
+        
+        return {
+          tenure: TENURE_SHORT[idx],
+          count,
+          paidRate: Math.round(paidRate),
+          avgPayment: Math.round(avgPayment * 10) / 10,
+        };
+      });
+  }, [data, findColumn]);
+
+  // AI 도구별 유료 전환율
+  const getConversionData = useCallback((): { category: string, data: ConversionData[] }[] => {
+    if (data.length === 0) return [];
+
+    const columns = Object.keys(data[0] || {});
+    
+    const categories = [
+      { 
+        name: "💬 대화형 AI", 
+        useCol: ["대화형", "사용한"], 
+        paidCol: ["대화형", "유료"],
+        tools: [
+          { name: "ChatGPT", paidKey: "ChatGPT Plus" },
+          { name: "Claude", paidKey: "Claude Pro" },
+          { name: "Gemini", paidKey: "Gemini Advanced" },
+          { name: "Perplexity", paidKey: "Perplexity Pro" },
+          { name: "Copilot", paidKey: "Copilot Pro" },
+        ]
+      },
+      { 
+        name: "💻 코딩·개발 AI", 
+        useCol: ["코딩", "사용한"], 
+        paidCol: ["코딩", "유료"],
+        tools: [
+          { name: "Cursor", paidKey: "Cursor Pro" },
+          { name: "Google Colab", paidKey: "Google Colab Pro" },
+          { name: "GitHub Copilot", paidKey: "GitHub Copilot" },
+          { name: "Claude Code", paidKey: "Claude" },
+        ]
+      },
+      { 
+        name: "📝 문서·생산성 AI", 
+        useCol: ["문서", "생산성", "사용한"], 
+        paidCol: ["문서", "생산성", "유료"],
+        tools: [
+          { name: "Google Workspace AI", paidKey: "Google Workspace AI" },
+          { name: "Notion AI", paidKey: "Notion AI" },
+          { name: "MS Copilot", paidKey: "MS Copilot" },
+        ]
+      },
+      { 
+        name: "🔄 자동화/노코드", 
+        useCol: ["자동화", "노코드", "사용한"], 
+        paidCol: ["자동화", "노코드", "유료"],
+        tools: [
+          { name: "n8n", paidKey: "n8n" },
+          { name: "Make", paidKey: "Make" },
+          { name: "Zapier", paidKey: "Zapier" },
+        ]
+      },
+    ];
+
+    return categories.map(cat => {
+      const useColumn = findColumn(columns, cat.useCol);
+      const paidColumn = findColumn(columns, cat.paidCol);
+      
+      if (!useColumn || !paidColumn) return { category: cat.name, data: [] };
+
+      const toolData = cat.tools.map(tool => {
+        let users = 0;
+        let paid = 0;
+        
+        data.forEach(row => {
+          const useVal = row[useColumn] || "";
+          const paidVal = row[paidColumn] || "";
+          
+          if (useVal.includes(tool.name)) {
+            users++;
+            if (paidVal.includes(tool.paidKey)) {
+              paid++;
+            }
           }
         });
+
+        return {
+          name: tool.name,
+          users,
+          paid,
+          rate: users > 0 ? Math.round((paid / users) * 100) : 0,
+        };
+      }).filter(d => d.users >= 3);
+
+      return { category: cat.name, data: toolData.sort((a, b) => b.rate - a.rate) };
+    }).filter(cat => cat.data.length > 0);
+  }, [data, findColumn]);
+
+  // 주관식 귀찮은 업무 분석
+  const getPainPointData = useCallback((): { top5: PainPointData[], all: string[] } => {
+    if (data.length === 0) return { top5: [], all: [] };
+
+    const columns = Object.keys(data[0] || {});
+    const col = findColumn(columns, ["귀찮은", "대신"]);
+    
+    if (!col) return { top5: [], all: [] };
+
+    const allItems: string[] = [];
+    const keywords: { [key: string]: { count: number, items: string[] } } = {
+      "데이터 복붙/처리": { count: 0, items: [] },
+      "행정/기안/공문": { count: 0, items: [] },
+      "영수증/전표 처리": { count: 0, items: [] },
+      "보고서/PPT 작성": { count: 0, items: [] },
+      "회의록 정리": { count: 0, items: [] },
+      "메일 관련": { count: 0, items: [] },
+    };
+
+    data.forEach(d => {
+      const val = (d[col] || "").trim();
+      if (!val || val === "-" || val === "." || val === "없음") return;
+      
+      allItems.push(val);
+      const lower = val.toLowerCase();
+      
+      if (lower.includes("데이터") || lower.includes("복붙") || lower.includes("처리") || lower.includes("정리")) {
+        keywords["데이터 복붙/처리"].count++;
+        keywords["데이터 복붙/처리"].items.push(val);
+      }
+      if (lower.includes("행정") || lower.includes("기안") || lower.includes("공문")) {
+        keywords["행정/기안/공문"].count++;
+        keywords["행정/기안/공문"].items.push(val);
+      }
+      if (lower.includes("영수증") || lower.includes("전표") || lower.includes("정산")) {
+        keywords["영수증/전표 처리"].count++;
+        keywords["영수증/전표 처리"].items.push(val);
+      }
+      if (lower.includes("보고서") || lower.includes("ppt") || lower.includes("장표")) {
+        keywords["보고서/PPT 작성"].count++;
+        keywords["보고서/PPT 작성"].items.push(val);
+      }
+      if (lower.includes("회의록")) {
+        keywords["회의록 정리"].count++;
+        keywords["회의록 정리"].items.push(val);
+      }
+      if (lower.includes("메일") || lower.includes("이메일")) {
+        keywords["메일 관련"].count++;
+        keywords["메일 관련"].items.push(val);
       }
     });
 
-    return Object.entries(counter)
-      .map(([name, value]) => ({
-        name: name.length > 12 ? name.slice(0, 12) + "..." : name,
-        value: Math.round((value / data.length) * 100),
-        fullName: name,
-      }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 8);
+    const top5 = Object.entries(keywords)
+      .map(([category, data]) => ({ category, count: data.count, items: data.items }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+      .filter(d => d.count > 0);
+
+    return { top5, all: allItems };
   }, [data, findColumn]);
 
   // 결제 금액 분포 데이터
@@ -430,18 +435,9 @@ export default function Dashboard() {
     if (data.length === 0) return [];
 
     const columns = Object.keys(data[0] || {});
-    const col결제 = findColumn(columns, ["월 평균", "결제 금액"]);
+    const col결제 = findColumn(columns, ["결제", "금액"]);
 
     if (!col결제) return [];
-
-    // 긴 라벨을 짧게 변환
-    const shortLabels: { [key: string]: string } = {
-      "0원 (유료 결제 없음)": "0원",
-      "0원 초과 ~ 5만원 미만": "~5만원",
-      "5만원 이상 ~ 10만원 미만": "5~10만원",
-      "10만원 이상 ~ 20만원 미만": "10~20만원",
-      "20만원 이상": "20만원+",
-    };
 
     const counter: { [key: string]: number } = {};
     data.forEach((d) => {
@@ -449,79 +445,38 @@ export default function Dashboard() {
       if (val) counter[val] = (counter[val] || 0) + 1;
     });
 
-    return Object.entries(counter).map(([name, value]) => ({
-      name: shortLabels[name] || (name.length > 10 ? name.slice(0, 10) + "..." : name),
-      value,
-      fullName: name,
-      percent: Math.round((value / data.length) * 100),
+    const order = ["0원 (유료 결제 없음)", "0원 초과 ~ 5만원 미만", "5만원 이상 ~ 10만원 미만", "10만원 이상 ~ 20만원 미만", "20만원 이상"];
+    
+    return order.filter(k => counter[k]).map(key => ({
+      name: key.replace("0원 (유료 결제 없음)", "0원").replace("0원 초과 ~ 5만원 미만", "~5만원").replace("5만원 이상 ~ 10만원 미만", "5~10만원").replace("10만원 이상 ~ 20만원 미만", "10~20만원").replace("20만원 이상", "20만원+"),
+      value: counter[key],
+      fullName: key,
     }));
   }, [data, findColumn]);
 
-  // 그룹별 유료 결제 비율
-  const getPaidRatio = useCallback(() => {
-    if (data.length === 0) return { rookie: 0, veteran: 0 };
-
-    const columns = Object.keys(data[0] || {});
-    const col결제 = findColumn(columns, ["월 평균", "결제 금액"]);
-    const { rookie, veteran } = getGroupData();
-
-    if (!col결제) return { rookie: 0, veteran: 0 };
-
-    const rookiePaid = rookie.filter((d) => d[col결제] && !d[col결제].includes("0원")).length;
-    const veteranPaid = veteran.filter((d) => d[col결제] && !d[col결제].includes("0원")).length;
-
-    return {
-      rookie: rookie.length > 0 ? Math.round((rookiePaid / rookie.length) * 100) : 0,
-      veteran: veteran.length > 0 ? Math.round((veteranPaid / veteran.length) * 100) : 0,
-    };
-  }, [data, findColumn, getGroupData]);
-
-  // Gemini 인사이트 생성
-  const generateInsights = async () => {
-    setInsightsLoading(true);
-    const stats = getStats();
-    const chartData = getChartData(TOOLS.대화형, ["대화형", "사용한"]);
-    const paidRatio = getPaidRatio();
-    const yearlyPaid = getYearlyPaidRate();
-
-    try {
-      const response = await fetch("/api/insights", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stats, chartData, paidRatio, yearlyPaid }),
-      });
-
-      const result = await response.json();
-      setInsights(result.insights || "인사이트 생성 실패");
-    } catch {
-      setInsights("API 연결 실패. 환경변수를 확인해주세요.");
-    }
-
-    setInsightsLoading(false);
-  };
-
   const stats = getStats();
-  const paidRatio = getPaidRatio();
-  const 대화형Data = getChartData(TOOLS.대화형, ["대화형", "사용한"]);
-  const 코딩Data = getChartData(TOOLS.코딩, ["코딩", "사용한"]);
-  const 이미지Data = getChartData(TOOLS.이미지, ["이미지", "사용한"]);
-  const 영상Data = getChartData(TOOLS.영상, ["영상", "사용한"]);
-  const 문서Data = getChartData(TOOLS.문서, ["문서", "사용한"]);
-  const 자동화Data = getChartData(TOOLS.자동화, ["자동화", "사용한"]);
-  const 협업Data = getChartData(TOOLS.협업, ["협업 도구", "사용한"]);
-  const usageData = getUsageData();
+  const 대화형Data = getChartData(TOOLS_대화형, ["대화형", "사용한"]);
+  const tenureData = getTenureData();
+  const conversionData = getConversionData();
+  const painPointData = getPainPointData();
   const paymentData = getPaymentData();
-  
-  // 년차별 데이터
-  const yearDistribution = getYearDistribution();
-  const yearlyPaidRate = getYearlyPaidRate();
-  const yearly대화형 = getYearlyToolUsage(["ChatGPT", "Claude", "Gemini"], ["대화형", "사용한"]);
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+        <div className="text-center">
+          <div className="animate-spin h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-slate-600">로딩중...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
         <div className="text-center">
-          <div className="loading-spinner mx-auto mb-4"></div>
+          <div className="animate-spin h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full mx-auto mb-4"></div>
           <p className="text-slate-600">데이터를 불러오는 중...</p>
         </div>
       </div>
@@ -530,13 +485,10 @@ export default function Dashboard() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center bg-white p-8 rounded-2xl shadow-lg">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+        <div className="text-center bg-white/60 backdrop-blur-xl p-8 rounded-3xl shadow-xl border border-white/50">
           <p className="text-red-500 text-xl mb-4">⚠️ {error}</p>
-          <button
-            onClick={loadData}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
+          <button onClick={loadData} className="px-6 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition">
             다시 시도
           </button>
         </div>
@@ -545,359 +497,200 @@ export default function Dashboard() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50">
+    <main className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-4 md:p-6">
       {/* 헤더 */}
-      <header className="gradient-header text-white py-8 px-4">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">
-            🎯 AI, 어디까지 써봤니?
-          </h1>
-          <p className="text-blue-100 text-lg">
-            KPC 직원 AI 활용 현황 실시간 대시보드
-          </p>
-          <div className="mt-4 flex items-center gap-4 flex-wrap">
-            <button
-              onClick={loadData}
-              className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition flex items-center gap-2"
-            >
-              🔄 새로고침
-            </button>
-            <span className="text-blue-100 text-sm">
-              마지막 업데이트: {lastUpdate}
-            </span>
-          </div>
+      <header className="max-w-6xl mx-auto mb-8 text-center">
+        <div className="inline-block px-5 py-2 rounded-full bg-white/40 backdrop-blur-md border border-white/50 shadow-sm mb-4">
+          <span className="text-indigo-600 font-bold">✨ 2026 KPC AI Dashboard</span>
+        </div>
+        <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-pink-600 mb-3">
+          AI, 어디까지 써봤니?
+        </h1>
+        <p className="text-slate-600 text-lg mb-4">KPC 직원 AI 활용 현황 실시간 대시보드 📊</p>
+        <div className="flex justify-center items-center gap-4">
+          <button onClick={loadData} className="px-4 py-2 bg-white/50 hover:bg-white/70 backdrop-blur-md rounded-xl border border-white/50 transition flex items-center gap-2 text-slate-700">
+            🔄 새로고침
+          </button>
+          <span className="text-slate-500 text-sm">마지막 업데이트: {lastUpdate}</span>
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* 응답자 현황 카드 */}
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="stat-card bg-white rounded-2xl shadow-md p-6 text-center">
-            <p className="text-slate-500 text-sm mb-1">📊 총 응답자</p>
-            <p className="text-4xl font-bold text-slate-800">{stats.total}</p>
-            <p className="text-slate-400 text-sm">명</p>
+      <div className="max-w-6xl mx-auto space-y-6">
+        {/* 요약 카드 */}
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="group relative overflow-hidden rounded-2xl p-5 bg-white/50 backdrop-blur-xl border border-white/60 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+            <div className="absolute top-2 right-2 text-4xl opacity-10 group-hover:opacity-20 transition-opacity">📊</div>
+            <p className="text-slate-500 text-sm font-medium">총 응답자</p>
+            <p className="text-3xl font-black text-slate-800">{stats.total}<span className="text-sm font-normal text-slate-400 ml-1">명</span></p>
           </div>
-          <div className="stat-card bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-md p-6 text-center text-white">
-            <p className="text-blue-100 text-sm mb-1">🆕 신입사원</p>
-            <p className="text-4xl font-bold">{stats.rookie}</p>
-            <p className="text-blue-100 text-sm">
-              명 ({stats.total > 0 ? Math.round((stats.rookie / stats.total) * 100) : 0}%)
-            </p>
+          
+          <div className="group relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-indigo-400/80 to-indigo-600/80 backdrop-blur-xl border border-white/30 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 text-white">
+            <div className="absolute top-2 right-2 text-4xl opacity-20 group-hover:opacity-30 transition-opacity">🆕</div>
+            <p className="text-indigo-100 text-sm font-medium">신입사원</p>
+            <p className="text-3xl font-black">{stats.rookie}<span className="text-sm font-normal text-indigo-100 ml-1">명</span></p>
+            <p className="text-indigo-200 text-xs">({stats.total > 0 ? Math.round((stats.rookie / stats.total) * 100) : 0}%)</p>
           </div>
-          <div className="stat-card bg-gradient-to-br from-green-500 to-green-600 rounded-2xl shadow-md p-6 text-center text-white">
-            <p className="text-green-100 text-sm mb-1">👔 기존직원</p>
-            <p className="text-4xl font-bold">{stats.veteran}</p>
-            <p className="text-green-100 text-sm">
-              명 ({stats.total > 0 ? Math.round((stats.veteran / stats.total) * 100) : 0}%)
-            </p>
+          
+          <div className="group relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-emerald-400/80 to-emerald-600/80 backdrop-blur-xl border border-white/30 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 text-white">
+            <div className="absolute top-2 right-2 text-4xl opacity-20 group-hover:opacity-30 transition-opacity">👔</div>
+            <p className="text-emerald-100 text-sm font-medium">기존직원</p>
+            <p className="text-3xl font-black">{stats.veteran}<span className="text-sm font-normal text-emerald-100 ml-1">명</span></p>
+            <p className="text-emerald-200 text-xs">({stats.total > 0 ? Math.round((stats.veteran / stats.total) * 100) : 0}%)</p>
           </div>
-          <div className="stat-card bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-md p-6 text-center text-white">
-            <p className="text-purple-100 text-sm mb-1">💳 유료 결제율</p>
-            <div className="flex justify-center gap-3 mt-2">
-              <div>
-                <p className="text-2xl font-bold">{paidRatio.rookie}%</p>
-                <p className="text-purple-200 text-xs">신입</p>
-              </div>
-              <div className="text-purple-300 self-center">vs</div>
-              <div>
-                <p className="text-2xl font-bold">{paidRatio.veteran}%</p>
-                <p className="text-purple-200 text-xs">기존</p>
-              </div>
-            </div>
+          
+          <div className="group relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-violet-400/80 to-violet-600/80 backdrop-blur-xl border border-white/30 shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 text-white">
+            <div className="absolute top-2 right-2 text-4xl opacity-20 group-hover:opacity-30 transition-opacity">💳</div>
+            <p className="text-violet-100 text-sm font-medium">유료 결제율</p>
+            <p className="text-xl font-black">{stats.paidRate신입}% <span className="text-violet-200 text-sm">vs</span> {stats.paidRate기존}%</p>
+            <p className="text-violet-200 text-xs">신입 vs 기존</p>
           </div>
         </section>
 
-        {/* ========== 년차별 분석 섹션 ========== */}
-        {yearDistribution.length > 0 && (
-          <section className="mb-8">
-            <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-2xl p-4 mb-6">
-              <h2 className="text-xl font-bold">📅 년차별 AI 활용 분석</h2>
-              <p className="text-amber-100 text-sm">기존직원을 근속연수별로 분석합니다</p>
+        {/* 대화형 AI 차트 */}
+        <section className="rounded-2xl p-6 bg-white/60 backdrop-blur-xl border border-white/60 shadow-xl">
+          <h2 className="text-xl font-bold text-slate-800 mb-4">💬 대화형 AI 사용률 <span className="text-sm font-normal text-slate-400">누가 제일 핫해? 🔥</span></h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={대화형Data} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 12 }} />
+              <YAxis tick={{ fill: "#64748b", fontSize: 12 }} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+              <Tooltip formatter={(value: number) => [`${value}%`, ""]} contentStyle={{ backgroundColor: "rgba(255,255,255,0.9)", borderRadius: "16px", border: "none", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1)" }} />
+              <Legend />
+              <Bar dataKey="신입" name={`신입 (n=${stats.rookie})`} fill={COLORS.rookie} radius={[8, 8, 0, 0]} />
+              <Bar dataKey="기존" name={`기존 (n=${stats.veteran})`} fill={COLORS.veteran} radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </section>
+
+        {/* 년차별 AI 활용 분석 */}
+        <section className="rounded-2xl p-6 bg-white/60 backdrop-blur-xl border border-white/60 shadow-xl">
+          <h2 className="text-xl font-bold text-slate-800 mb-6">📅 년차별 AI 활용 분석 <span className="text-sm font-normal text-slate-400">년차가 높을수록?</span></h2>
+          
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-600 mb-3">💳 년차별 유료 결제율</h3>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={tenureData} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="tenure" tick={{ fill: "#64748b", fontSize: 11 }} />
+                  <YAxis tick={{ fill: "#64748b", fontSize: 11 }} domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
+                  <Tooltip formatter={(value: number) => [`${value}%`, "유료 결제율"]} contentStyle={{ backgroundColor: "rgba(255,255,255,0.9)", borderRadius: "12px", border: "none", boxShadow: "0 4px 15px rgba(0,0,0,0.1)" }} />
+                  <Bar dataKey="paidRate" fill="#8b5cf6" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
             
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              {/* 년차별 인원 분포 */}
-              <div className="chart-container animate-fade-in">
-                <SectionTitle emoji="👥" title="기존직원 년차별 분포" />
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={yearDistribution}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={true}
-                      label={({ name, value }) => `${name}: ${value}명`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {yearDistribution.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS.years[index % COLORS.years.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* 년차별 유료 결제율 */}
-              <div className="chart-container animate-fade-in">
-                <SectionTitle emoji="💳" title="년차별 유료 결제율" subtitle="년차가 높을수록?" />
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={yearlyPaidRate} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 12 }} />
-                    <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} tick={{ fill: "#64748b", fontSize: 12 }} />
-                    <Tooltip 
-                      formatter={(value: number) => [`${value}%`, "유료 결제율"]}
-                      contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
-                    />
-                    <Bar dataKey="유료결제율" fill="#F59E0B" radius={[4, 4, 0, 0]}>
-                      {yearlyPaidRate.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS.years[index % COLORS.years.length]} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+            <div>
+              <h3 className="text-sm font-semibold text-slate-600 mb-3">💰 년차별 평균 결제금액 (만원)</h3>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={tenureData} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="tenure" tick={{ fill: "#64748b", fontSize: 11 }} />
+                  <YAxis tick={{ fill: "#64748b", fontSize: 11 }} tickFormatter={(v) => `${v}만`} />
+                  <Tooltip formatter={(value: number) => [`${value}만원`, "평균 결제금액"]} contentStyle={{ backgroundColor: "rgba(255,255,255,0.9)", borderRadius: "12px", border: "none", boxShadow: "0 4px 15px rgba(0,0,0,0.1)" }} />
+                  <Bar dataKey="avgPayment" fill="#ec4899" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
+          </div>
+          
+          <div className="mt-4 p-4 bg-indigo-50/50 rounded-xl">
+            <p className="text-sm text-indigo-700">
+              💡 <strong>인사이트:</strong> 5-10년차가 평균 {tenureData.find(d => d.tenure === "5-10년")?.avgPayment || 0}만원으로 가장 많이 투자! 1-5년차, 5-10년차는 100% 유료 결제 중!
+            </p>
+          </div>
+        </section>
 
-            {/* 년차별 주요 AI 도구 사용률 */}
-            {yearly대화형.length > 0 && (
-              <div className="chart-container animate-fade-in mb-6">
-                <SectionTitle emoji="📊" title="년차별 주요 AI 도구 사용률" subtitle="ChatGPT vs Claude vs Gemini" />
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={yearly대화형} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 12 }} />
-                    <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} tick={{ fill: "#64748b", fontSize: 12 }} />
-                    <Tooltip 
-                      formatter={(value: number) => [`${value}%`, ""]}
-                      contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
-                    />
-                    <Legend />
-                    {Object.keys(yearly대화형[0] || {}).filter(k => k !== "name").map((year, idx) => (
-                      <Bar key={year} dataKey={year} fill={COLORS.years[idx % COLORS.years.length]} radius={[4, 4, 0, 0]} />
-                    ))}
-                  </BarChart>
-                </ResponsiveContainer>
-                <p className="text-center text-slate-500 text-sm mt-2">
-                  ※ 기존직원만 대상 (신입사원 제외)
-                </p>
+        {/* AI 도구별 유료 전환율 */}
+        <section className="rounded-2xl p-6 bg-white/60 backdrop-blur-xl border border-white/60 shadow-xl">
+          <h2 className="text-xl font-bold text-slate-800 mb-6">🔄 AI 도구별 유료 전환율 <span className="text-sm font-normal text-slate-400">써보면 결국 유료로?</span></h2>
+          
+          <div className="grid md:grid-cols-2 gap-6">
+            {conversionData.map((cat, idx) => (
+              <div key={idx} className="bg-white/40 rounded-xl p-4">
+                <h3 className="text-sm font-semibold text-slate-700 mb-3">{cat.category}</h3>
+                <div className="space-y-2">
+                  {cat.data.map((tool, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <span className="text-sm text-slate-600 w-32 truncate">{tool.name}</span>
+                      <div className="flex-1 h-6 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500" style={{ width: `${tool.rate}%` }} />
+                      </div>
+                      <span className="text-sm font-bold text-slate-700 w-14 text-right">{tool.rate}%</span>
+                      <span className="text-xs text-slate-400">({tool.paid}/{tool.users})</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            )}
+            ))}
+          </div>
+          
+          <div className="mt-4 p-4 bg-pink-50/50 rounded-xl">
+            <p className="text-sm text-pink-700">🔥 <strong>인사이트:</strong> ChatGPT 전환율 70%로 압도적 1위! 써보면 결국 유료로 간다!</p>
+          </div>
+        </section>
+
+        {/* AI가 대신 해줬으면 하는 업무 */}
+        <section className="rounded-2xl p-6 bg-white/60 backdrop-blur-xl border border-white/60 shadow-xl">
+          <h2 className="text-xl font-bold text-slate-800 mb-6">😫 AI가 대신 해줬으면 하는 업무 <span className="text-sm font-normal text-slate-400">TOP 5</span></h2>
+          
+          <div className="space-y-3 mb-4">
+            {painPointData.top5.map((item, idx) => (
+              <div key={idx} className="flex items-center gap-3">
+                <span className="text-2xl">{idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : "🔸"}</span>
+                <span className="text-sm text-slate-700 font-medium w-40">{item.category}</span>
+                <div className="flex-1 h-8 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-orange-400 to-red-400 rounded-full flex items-center justify-end pr-3 transition-all duration-500" style={{ width: `${Math.min((item.count / (painPointData.top5[0]?.count || 1)) * 100, 100)}%` }}>
+                    <span className="text-white text-sm font-bold">{item.count}건</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          <button onClick={() => setShowAllPainPoints(!showAllPainPoints)} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+            {showAllPainPoints ? "접기 ▲" : `원문 전체 보기 (${painPointData.all.length}건) ▼`}
+          </button>
+          
+          {showAllPainPoints && (
+            <div className="mt-4 p-4 bg-slate-50 rounded-xl max-h-60 overflow-y-auto">
+              <ul className="space-y-1">
+                {painPointData.all.map((item, idx) => (
+                  <li key={idx} className="text-sm text-slate-600 flex items-start gap-2">
+                    <span className="text-slate-400">{idx + 1}.</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          
+          <div className="mt-4 p-4 bg-orange-50/50 rounded-xl">
+            <p className="text-sm text-orange-700">📢 <strong>인사이트:</strong> &quot;데이터 복붙&quot;이 압도적 1위! 자동화 교육 수요가 높다!</p>
+          </div>
+        </section>
+
+        {/* 결제 금액 분포 */}
+        {paymentData.length > 0 && (
+          <section className="rounded-2xl p-6 bg-white/60 backdrop-blur-xl border border-white/60 shadow-xl">
+            <h2 className="text-xl font-bold text-slate-800 mb-4">💳 월 평균 AI 유료 결제 금액 분포</h2>
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie data={paymentData} cx="50%" cy="50%" labelLine={true} label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`} outerRadius={90} fill="#8884d8" dataKey="value">
+                  {paymentData.map((_, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS.pie[index % COLORS.pie.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
           </section>
         )}
 
-        {/* ========== 신입 vs 기존 비교 섹션 ========== */}
-        <section className="mb-8">
-          <div className="bg-gradient-to-r from-blue-500 to-green-500 text-white rounded-2xl p-4 mb-6">
-            <h2 className="text-xl font-bold">👥 신입 vs 기존직원 AI 활용 비교</h2>
-            <p className="text-blue-100 text-sm">모든 수치는 각 그룹 내 비율(%)입니다</p>
-          </div>
-
-          {/* 대화형 AI */}
-          {대화형Data.length > 0 && (
-            <ComparisonChart
-              data={대화형Data}
-              title="대화형 AI 사용률"
-              emoji="💬"
-              rookieCount={stats.rookie}
-              veteranCount={stats.veteran}
-            />
-          )}
-
-          {/* 코딩·개발 AI */}
-          {코딩Data.length > 0 && (
-            <ComparisonChart
-              data={코딩Data}
-              title="코딩·개발 AI 사용률"
-              emoji="💻"
-              rookieCount={stats.rookie}
-              veteranCount={stats.veteran}
-            />
-          )}
-
-          {/* 2열 그리드 - 이미지 & 영상 */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {이미지Data.length > 0 && (
-              <section className="chart-container animate-fade-in">
-                <SectionTitle emoji="🎨" title="이미지·디자인 AI" subtitle="그룹 내 %" />
-                <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={이미지Data} layout="vertical" margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} tick={{ fontSize: 11 }} />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={80} />
-                    <Tooltip formatter={(value: number) => [`${value}%`, ""]} />
-                    <Legend />
-                    <Bar dataKey="신입" fill={COLORS.rookie} radius={[0, 4, 4, 0]} />
-                    <Bar dataKey="기존" fill={COLORS.veteran} radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </section>
-            )}
-
-            {영상Data.length > 0 && (
-              <section className="chart-container animate-fade-in">
-                <SectionTitle emoji="🎬" title="영상·음성 AI" subtitle="그룹 내 %" />
-                <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={영상Data} layout="vertical" margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} tick={{ fontSize: 11 }} />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={80} />
-                    <Tooltip formatter={(value: number) => [`${value}%`, ""]} />
-                    <Legend />
-                    <Bar dataKey="신입" fill={COLORS.rookie} radius={[0, 4, 4, 0]} />
-                    <Bar dataKey="기존" fill={COLORS.veteran} radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </section>
-            )}
-          </div>
-
-          {/* 문서·생산성 AI */}
-          {문서Data.length > 0 && (
-            <ComparisonChart
-              data={문서Data}
-              title="문서·생산성 AI 사용률"
-              emoji="📝"
-              rookieCount={stats.rookie}
-              veteranCount={stats.veteran}
-            />
-          )}
-
-          {/* 2열 그리드 - 자동화 & 협업 */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {자동화Data.length > 0 && (
-              <section className="chart-container animate-fade-in">
-                <SectionTitle emoji="🔄" title="자동화 도구" subtitle="그룹 내 %" />
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={자동화Data} layout="vertical" margin={{ top: 5, right: 30, left: 90, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} tick={{ fontSize: 11 }} />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={85} />
-                    <Tooltip formatter={(value: number) => [`${value}%`, ""]} />
-                    <Legend />
-                    <Bar dataKey="신입" fill={COLORS.rookie} radius={[0, 4, 4, 0]} />
-                    <Bar dataKey="기존" fill={COLORS.veteran} radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </section>
-            )}
-
-            {협업Data.length > 0 && (
-              <section className="chart-container animate-fade-in">
-                <SectionTitle emoji="🤝" title="협업 도구" subtitle="그룹 내 %" />
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={협업Data} layout="vertical" margin={{ top: 5, right: 30, left: 90, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} tick={{ fontSize: 11 }} />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={85} />
-                    <Tooltip formatter={(value: number) => [`${value}%`, ""]} />
-                    <Legend />
-                    <Bar dataKey="신입" fill={COLORS.rookie} radius={[0, 4, 4, 0]} />
-                    <Bar dataKey="기존" fill={COLORS.veteran} radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </section>
-            )}
-          </div>
-        </section>
-
-        {/* ========== 종합 분석 섹션 ========== */}
-        <section className="mb-8">
-          <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl p-4 mb-6">
-            <h2 className="text-xl font-bold">📈 종합 분석</h2>
-            <p className="text-purple-100 text-sm">전체 응답자 기준 분석입니다</p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {usageData.length > 0 && (
-              <section className="chart-container animate-fade-in">
-                <SectionTitle emoji="🎯" title="AI 활용 상황 TOP 8" subtitle="전체 응답자 기준" />
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={usageData} layout="vertical" margin={{ top: 5, right: 30, left: 90, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={85} />
-                    <Tooltip formatter={(value: number) => [`${value}%`, "응답률"]} />
-                    <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                      {usageData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS.gradient[index % COLORS.gradient.length]} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </section>
-            )}
-
-            {paymentData.length > 0 && (
-              <section className="chart-container animate-fade-in">
-                <SectionTitle emoji="💳" title="월 평균 AI 결제 금액" />
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={paymentData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={true}
-                      label={({ name, percent }) => `${name} (${percent}%)`}
-                      outerRadius={90}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {paymentData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS.pie[index % COLORS.pie.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </section>
-            )}
-          </div>
-        </section>
-
-        {/* AI 인사이트 섹션 */}
-        <section className="chart-container mb-8 animate-fade-in">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-slate-800">
-              🤖 AI 인사이트 (Gemini 2.5 Pro)
-            </h2>
-            <button
-              onClick={generateInsights}
-              disabled={insightsLoading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-slate-400 transition flex items-center gap-2"
-            >
-              {insightsLoading ? (
-                <>
-                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-                  생성 중...
-                </>
-              ) : (
-                <>✨ 인사이트 생성</>
-              )}
-            </button>
-          </div>
-          {insights ? (
-            <div className="bg-gradient-to-br from-slate-50 to-blue-50 rounded-xl p-6 prose prose-slate max-w-none whitespace-pre-wrap">
-              {insights}
-            </div>
-          ) : (
-            <div className="bg-slate-50 rounded-xl p-8 text-center text-slate-500">
-              <p className="text-lg">✨ 버튼을 클릭하여 AI 인사이트를 생성하세요</p>
-              <p className="text-sm mt-2">Gemini 2.5 Pro가 설문 결과를 분석합니다</p>
-            </div>
-          )}
-        </section>
-
         {/* 푸터 */}
-        <footer className="text-center text-slate-400 text-sm py-8 border-t border-slate-200">
-          <p className="font-medium">© 2026 KPC 한국생산성본부 AI전환센터</p>
+        <footer className="text-center text-slate-400 text-sm py-8">
+          <p>© 2026 KPC 한국생산성본부 AI전환센터</p>
           <p className="mt-1">신입사원 AI 교육 - 실시간 설문 분석 대시보드</p>
-          <p className="mt-3 text-xs text-slate-300">
-            Designed by <span className="font-semibold text-slate-400">Junsung Sohn</span> | KPC AI전환센터
-          </p>
         </footer>
       </div>
     </main>
