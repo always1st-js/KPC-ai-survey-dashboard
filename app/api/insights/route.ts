@@ -23,7 +23,7 @@ export async function POST(request: Request) {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     // 모델명: gemini-pro (v1beta에서 가장 안정적)
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" });
 
     const rookiePercent = stats.total > 0 ? Math.round((stats.rookie / stats.total) * 100) : 0;
     const veteranPercent = stats.total > 0 ? Math.round((stats.veteran / stats.total) * 100) : 0;
