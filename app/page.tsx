@@ -665,9 +665,11 @@ export default function Dashboard() {
     }));
   }, [data, findColumn]);
 
-  // Gemini 인사이트 생성
+  // Gemini 인사이트 생성(돈 나가서 기능 막아둠 🚫)
   const generateInsights = async () => {
     setInsightsLoading(true);
+    // 통신기능 싹 다 주석 처리!
+    /*
     const stats = getStats();
     const chartData = getChartData(TOOLS_대화형, ["Q4", "대화형", "사용한"]);
 
@@ -683,7 +685,10 @@ export default function Dashboard() {
     } catch {
       setInsights("API 연결 실패. 환경변수를 확인해주세요.");
     }
+    */
 
+    //누르면 돈 나간다고 경고문만 띄워주기 ㅋㅋㅋ
+    setInsights("현재 AI 인사이트 기능은 예산 문제로 잠시 꺼두었습니다.)");
     setInsightsLoading(false);
   };
 
